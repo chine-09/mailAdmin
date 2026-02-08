@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>メール管理メニュー</title>
+    <style>
+        body { font-family: sans-serif; padding: 50px; text-align: center; }
+        .menu-btn {
+            display: block;
+            width: 300px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            font-size: 20px;
+            border-radius: 8px;
+        }
+        .menu-btn:hover { background: #0056b3; }
+        .menu-btn.list { background: #28a745; } /* 一覧は緑色 */
+    </style>
+</head>
+<body>
+    <h1>メールサーバ管理システム</h1>
+    
+    <a href="/user/add" class="menu-btn">新規ユーザ登録</a>
+    <a href="/user/list" class="menu-btn list">ユーザ一覧・編集</a>
+    
+    <form th:action="@{/logout}" method="post" style="text-align: center; margin-top: 40px;">
+        <button type="submit" style="background:none; border:none; color:#666; text-decoration:underline; cursor:pointer;">
+            ログアウト
+        </button>
+    </form>
+    
+</body>
+</html>
