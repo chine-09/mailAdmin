@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>ユーザ情報編集</title>
+    <style>
+        /* user_add.html と同じデザインスタイルを適用 */
+        body {
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* 戻るリンク */
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+            color: #007bff;
+        }
+
+        /* カードデザイン */
+        .container {
+            max-width: 450px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: #2c3e50;
+            border-bottom: 2px solid #eaeaea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #555;
+        }
+
+        /* 注意書き（パスワード欄用） */
+        .note {
+            font-size: 12px;
+            color: #888;
+            font-weight: normal;
+            margin-left: 5px;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        /* 更新ボタン（色は少し変えて緑系にするのもアリですが、青で統一します） */
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="/user/list" class="back-link">← 一覧に戻る</a>
+
+    <div class="container">
+        <h1>ユーザ情報編集</h1>
+
+        <form th:action="@{/user/update}" th:object="${userForm}" method="post">
+            <input type="hidden" name="id" th:value="${userId}">
+
+            <div class="form-group">
+                <label>ドメイン</label>
+                <select th:field="*{domainId}">
+                    <option th:each="domain : ${domains}" th:value="${domain.id}" th:text="${domain.name}"></option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>ユーザ名 (@より前)</label>
+                <input type="text" th:field="*{username}" required>
+            </div>
+
+            <div class="form-group">
+                <label>パスワード <span class="note">※変更しない場合は空欄のまま</span></label>
+                <input type="password" th:field="*{password}" placeholder="新しいパスワードを入力">
+            </div>
+
+            <button type="submit">更新内容を保存</button>
+        </form>
+    </div>
+
+</body>
+</html>
