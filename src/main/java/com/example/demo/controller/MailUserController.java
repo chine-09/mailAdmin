@@ -1,8 +1,5 @@
 package com.example.demo.controller;
 
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +15,7 @@ import com.example.demo.entity.VirtualUser;
 import com.example.demo.form.UserForm;
 import com.example.demo.repository.VirtualDomainRepository;
 import com.example.demo.repository.VirtualUserRepository;
-import com.opencsv.CSVReader;
+import com.example.demo.service.InputCsvService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,6 +25,7 @@ public class MailUserController {
 
 	private final VirtualUserRepository userRepository;
 	private final VirtualDomainRepository domainRepository;
+	private final InputCsvService csvService;
 	
 	// 1. トップメニュー
     @GetMapping("/")
@@ -35,7 +33,6 @@ public class MailUserController {
         return "top";
     }
 
-    // --- ユーザ一覧・削除 ---
 
     // 2. ユーザ一覧画面
     @GetMapping("/user/list")
@@ -55,8 +52,8 @@ public class MailUserController {
 
     // 4. 登録フォーム表示
     @GetMapping("/user/add")
-    public String showAddForm(Model model) {
-        model.addAttribute("userForm", new UserForm());
+    public String showAddForm(@ModelAttribute UserForm userForm, Model model) {
+        //model.addAttribute("userForm", new UserForm());
         model.addAttribute("domains", domainRepository.findAll());
         return "user_add";
     }
@@ -125,69 +122,20 @@ public class MailUserController {
             return "redirect:/user/list";
         }
 
-        int successCount = 0;
-        int errorCount = 0;
-
-        // UTF-8で読み込み
-        try (CSVReader reader = new CSVReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-            String[] line;
-            while ((line = reader.readNext()) != null) {
-                // 列不足や空行のスキップ
-                if (line.length < 2) continue;
-
-                // 1. データの読み込み
-                String fullEmail = line[0].trim(); // user@example.com
-                String password = line[1].trim();  // password123
-
-                // 2. @で分割してドメイン名を特定
-                int atIndex = fullEmail.lastIndexOf('@');
-                if (atIndex == -1) {
-                    System.out.println("不正な形式: " + fullEmail);
-                    errorCount++;
-                    continue;
-                }
-                String username = fullEmail.substring(0, atIndex);
-                String domainName = fullEmail.substring(atIndex + 1);
-
-                try {
-                    // 3. ドメインの存在確認 (名前から検索)
-                    VirtualDomain domain = domainRepository.findByName(domainName);
-                    if (domain == null) {
-                        System.out.println("未登録ドメイン: " + domainName);
-                        errorCount++;
-                        continue;
-                    }
-
-                    // 4. ユーザデータの作成
-                    VirtualUser user = new VirtualUser();
-                    user.setVirtualDomain(domain);
-                    user.setPassword(password); // DBトリガーで暗号化される
-                    user.setEmail(fullEmail);
-                    
-                    // Maildir生成: example.com/user/
-                    String maildir = domain.getName() + "/" + username + "/";
-                    user.setMaildir(maildir);
-
-                    // 5. 保存
-                    userRepository.save(user);
-                    successCount++;
-
-                } catch (Exception e) {
-                    // 重複登録などのエラー
-                    System.out.println("登録エラー: " + fullEmail + " -> " + e.getMessage());
-                    errorCount++;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            redirectAttributes.addFlashAttribute("error", "CSV読み込みエラーが発生しました");
-            return "redirect:/user/list";
+        String resultMessage = csvService.importCsvUsers(file);
+        
+        // メッセージの種類によって表示色を変えたい場合の簡易判定（任意）
+        if (resultMessage.startsWith("エラー")) {
+            redirectAttributes.addFlashAttribute("error", resultMessage);
+        } else {
+            redirectAttributes.addFlashAttribute("msg", resultMessage);
         }
 
-        String msg = successCount + "件登録しました (エラー/スキップ: " + errorCount + "件)";
-        redirectAttributes.addFlashAttribute("msg", msg);
-        
         return "redirect:/user/list";
+        
+        
+        
+        
     }
 
     // (共通処理) 保存ロジック
