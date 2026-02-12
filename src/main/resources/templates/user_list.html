@@ -17,7 +17,15 @@
 <body>
     <a href="/" class="top-link">← メニューに戻る</a>
     <h1>登録済みユーザ一覧</h1>
-
+	<div th:if="${msg}" class="msg-box msg-success" th:text="${msg}"></div>
+    
+    <div th:if="${error}" class="msg-box msg-error">
+        <div th:text="${error}" style="font-weight:bold; margin-bottom:5px;"></div>
+        
+        <ul th:if="${errorList}" style="margin:0; padding-left:20px; font-size:13px;">
+            <li th:each="err : ${errorList}" th:text="${err}"></li>
+        </ul>
+    </div>
     <table>
         <thead>
             <tr>

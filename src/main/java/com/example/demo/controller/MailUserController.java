@@ -16,6 +16,7 @@ import com.example.demo.form.UserForm;
 import com.example.demo.repository.VirtualDomainRepository;
 import com.example.demo.repository.VirtualUserRepository;
 import com.example.demo.service.InputCsvService;
+import com.example.demo.service.UserRegistService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +27,7 @@ public class MailUserController {
 	private final VirtualUserRepository userRepository;
 	private final VirtualDomainRepository domainRepository;
 	private final InputCsvService csvService;
+	private final UserRegistService registService;
 	
 	// 1. トップメニュー
     @GetMapping("/")
@@ -76,17 +78,32 @@ public class MailUserController {
 
     // 6. 登録実行
     @PostMapping("/user/register")
-    public String register(@ModelAttribute UserForm form) {
-        saveUser(form, new VirtualUser()); // 新規作成
-        return "redirect:/user/list"; // 完了後は一覧へ
+    public String register(@ModelAttribute UserForm form,Model model,RedirectAttributes redirectAttributes) {
+    	try {
+            registService.saveUserFromForm(form, new VirtualUser()); 
+        } catch (IllegalArgumentException e) {
+            // ★エラーが発生した場合
+            model.addAttribute("error", e.getMessage()); // エラーメッセージをセット
+            model.addAttribute("domains", domainRepository.findAll());
+            return "user_add"; // 入力画面（新規登録）に戻る
+        }
+        return "redirect:/user/list"; 
     }
+    
 
     // --- ユーザ編集 ---
 
     // 7. 編集フォーム表示
     @GetMapping("/user/edit/{id}")
-    public String showEditForm(@PathVariable Integer id, Model model) {
-        VirtualUser user = userRepository.findById(id).orElseThrow();
+    public String showEditForm(@PathVariable Integer id, Model model,RedirectAttributes redirectAttributes) {
+        VirtualUser user = userRepository.findById(id).orElse(null);
+        
+     // ★追加: ユーザが存在しない場合の処理
+        if (user == null) {
+            redirectAttributes.addFlashAttribute("error", "指定されたユーザ(ID:" + id + ")は見つかりませんでした");
+            return "redirect:/user/list";
+        }
+        
         
         // 既存データをフォームに詰める作業
         UserForm form = new UserForm();
@@ -108,53 +125,40 @@ public class MailUserController {
 
     // 8. 編集実行
     @PostMapping("/user/update")
-    public String update(@RequestParam Integer id, @ModelAttribute UserForm form) {
-        // IDから既存ユーザを取得して更新
-        VirtualUser user = userRepository.findById(id).orElseThrow();
-        saveUser(form, user);
+    public String update(@RequestParam Integer id, @ModelAttribute UserForm form,Model model) {
+    	try {
+            VirtualUser user = userRepository.findById(id).orElseThrow();
+            registService.saveUserFromForm(form, user);
+        } catch (IllegalArgumentException e) {
+            // ★エラーが発生した場合
+            model.addAttribute("error", e.getMessage());
+            model.addAttribute("userId", id);
+            model.addAttribute("domains", domainRepository.findAll());
+            return "user_edit"; // 入力画面（編集）に戻る
+        }
         return "redirect:/user/list";
     }
     
     @PostMapping("/user/import")
     public String importCsv(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
-        if (file.isEmpty()) {
+    	if (file.isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "ファイルが選択されていません");
             return "redirect:/user/list";
         }
 
-        String resultMessage = csvService.importCsvUsers(file);
+        // Serviceから結果オブジェクトを受け取る
+        InputCsvService.ImportResult result = csvService.importCsvUsers(file);
         
-        // メッセージの種類によって表示色を変えたい場合の簡易判定（任意）
-        if (resultMessage.startsWith("エラー")) {
-            redirectAttributes.addFlashAttribute("error", resultMessage);
+        if (result.isHasError()) {
+            // エラーがあった場合、サマリーと詳細リストの両方を渡す
+            redirectAttributes.addFlashAttribute("error", result.getSummaryMessage());
+            redirectAttributes.addFlashAttribute("errorList", result.getErrorDetails());
         } else {
-            redirectAttributes.addFlashAttribute("msg", resultMessage);
+            // 成功のみの場合
+            redirectAttributes.addFlashAttribute("msg", result.getSummaryMessage());
         }
 
         return "redirect:/user/list";
-        
-        
-        
-        
-    }
-
-    // (共通処理) 保存ロジック
-    private void saveUser(UserForm form, VirtualUser user) {
-        VirtualDomain domain = domainRepository.findById(form.getDomainId()).orElseThrow();
-        user.setVirtualDomain(domain);
-        
-        // パスワードが入力されている場合のみ更新（空なら変更しない）
-        if (form.getPassword() != null && !form.getPassword().isEmpty()) {
-            user.setPassword(form.getPassword());
-        }
-
-        String email = form.getUsername() + "@" + domain.getName();
-        user.setEmail(email);
-
-        String maildir = domain.getName() + "/" + form.getUsername() + "/";
-        user.setMaildir(maildir);
-
-        userRepository.save(user);
     }
     
     @GetMapping("/login")
