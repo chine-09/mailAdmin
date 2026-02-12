@@ -4,51 +4,156 @@
     <meta charset="UTF-8">
     <title>ユーザ一覧</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .btn { padding: 5px 10px; color: white; text-decoration: none; border-radius: 4px; font-size: 14px; border:none; cursor: pointer;}
-        .btn-edit { background-color: #ffc107; color: black; } /* 黄色 */
-        .btn-del { background-color: #dc3545; } /* 赤 */
-        .top-link { margin-bottom: 20px; display: inline-block; }
+        /* 全体の設定: box-sizingを指定して幅計算をズレなくする */
+        * { box-sizing: border-box; }
+        
+        body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 20px; background-color: #f4f6f9; color: #333; }
+        .container { max-width: 950px; margin: 0 auto; }
+        
+        /* タイトルエリア */
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        h1 { margin: 0; font-size: 24px; color: #2c3e50; }
+        .top-link { text-decoration: none; color: #007bff; font-weight: bold; font-size: 14px; }
+        .top-link:hover { text-decoration: underline; }
+        
+        /* メッセージエリア */
+        .msg-box { padding: 15px; border-radius: 4px; margin-bottom: 20px; font-weight: bold; }
+        .msg-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .msg-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        /* ★共通デザイン: 白いカードパネル */
+        /* これをCSV、検索、テーブル全てに適用して幅を揃えます */
+        .section-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            margin-bottom: 20px; /* パネル同士の間隔 */
+            overflow: hidden; /* 角丸を維持するため */
+        }
+
+        /* パネル内部の余白設定 */
+        .panel-padding { padding: 20px 25px; }
+
+        /* 1. CSV出力パネル専用スタイル */
+        .csv-flex { display: flex; justify-content: space-between; align-items: center; }
+        .panel-info h3 { margin: 0 0 5px 0; font-size: 18px; color: #555; display: flex; align-items: center; gap: 8px; }
+        .panel-info svg { width: 20px; height: 20px; fill: #555; }
+        .panel-desc { font-size: 13px; color: #777; margin: 0; }
+
+        /* 2. 検索パネル専用スタイル */
+        .search-form { display: flex; gap: 10px; align-items: center; }
+        .search-input { 
+            width: 300px; 
+            padding: 10px 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            font-size: 15px; 
+            transition: border-color 0.2s;
+        }
+        .search-input:focus { outline: none; border-color: #007bff; }
+
+        /* アイコン付きボタン共通 */
+        .btn-icon {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 10px 20px; border-radius: 4px; border: none; font-size: 14px; font-weight: bold; cursor: pointer; text-decoration: none; transition: all 0.2s;
+            line-height: 1.5;
+        }
+        .btn-icon svg { width: 16px; height: 16px; fill: currentColor; }
+        
+        /* ボタン色設定 */
+        .btn-export { background-color: #5a6268; color: white; } /* グレー */
+        .btn-export:hover { background-color: #42494e; transform: translateY(-1px); }
+        
+        .btn-search { background-color: #007bff; color: white; } /* 青 */
+        .btn-search:hover { background-color: #0069d9; }
+        
+        .btn-clear { background-color: #fff; color: #666; border: 1px solid #ccc; } /* 白 */
+        .btn-clear:hover { background-color: #f8f9fa; }
+
+        /* 3. テーブル専用スタイル */
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px 25px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #f8f9fa; font-weight: bold; color: #555; border-bottom: 2px solid #eaeaea; }
+        tr:last-child td { border-bottom: none; }
+        
+        /* テーブル内操作ボタン */
+        .btn-sm { padding: 5px 10px; border-radius: 3px; text-decoration: none; font-size: 12px; color: white; border: none; cursor: pointer; display: inline-block; }
+        .btn-edit { background-color: #ffc107; color: #212529; margin-right: 5px; }
+        .btn-del { background-color: #dc3545; }
     </style>
 </head>
 <body>
-    <a href="/" class="top-link">← メニューに戻る</a>
-    <h1>登録済みユーザ一覧</h1>
-	<div th:if="${msg}" class="msg-box msg-success" th:text="${msg}"></div>
-    
-    <div th:if="${error}" class="msg-box msg-error">
-        <div th:text="${error}" style="font-weight:bold; margin-bottom:5px;"></div>
+
+    <div class="container">
         
-        <ul th:if="${errorList}" style="margin:0; padding-left:20px; font-size:13px;">
-            <li th:each="err : ${errorList}" th:text="${err}"></li>
-        </ul>
+        <div class="page-header">
+            <h1>ユーザ一覧</h1>
+            <a href="/" class="top-link">← メニューに戻る</a>
+        </div>
+
+        <div th:if="${msg}" class="msg-box msg-success" th:text="${msg}"></div>
+        <div th:if="${error}" class="msg-box msg-error" th:text="${error}"></div>
+
+        <div class="section-card panel-padding">
+            <div class="csv-flex">
+                <div class="panel-info">
+                    <h3>
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                        アカウント台帳出力
+                    </h3>
+                    <p class="panel-desc">
+                        登録されている全ユーザ情報をCSV形式でダウンロードします (パスワードは伏せ字)
+                    </p>
+                </div>
+                <a href="/user/export" class="btn-icon btn-export">
+                    <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path></svg>
+                    <span>CSVダウンロード</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="section-card panel-padding">
+            <form th:action="@{/user/list}" method="get" class="search-form">
+                <input type="text" name="keyword" th:value="${keyword}" placeholder="メールアドレスで検索..." class="search-input">
+                
+                <button type="submit" class="btn-icon btn-search">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    検索
+                </button>
+                
+                <a th:if="${keyword != null and keyword != ''}" href="/user/list" class="btn-icon btn-clear">
+                    クリア
+                </a>
+            </form>
+        </div>
+
+        <div class="section-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>メールアドレス</th>
+                        <th>Maildir</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="user : ${users}">
+                        <td th:text="${user.id}">1</td>
+                        <td th:text="${user.email}">test@example.com</td>
+                        <td th:text="${user.maildir}">example.com/test/</td>
+                        <td>
+                            <a th:href="@{/user/edit/{id}(id=${user.id})}" class="btn-sm btn-edit">編集</a>
+                            <form th:action="@{/user/delete/{id}(id=${user.id})}" method="post" style="display:inline;">
+                                <button type="submit" class="btn-sm btn-del" onclick="return confirm('本当に削除しますか？');">削除</button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
     </div>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>メールアドレス</th>
-                <th>Maildir</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr th:each="user : ${users}">
-                <td th:text="${user.id}">1</td>
-                <td th:text="${user.email}">test@example.com</td>
-                <td th:text="${user.maildir}">example.com/test/</td>
-                <td>
-                    <a th:href="@{/user/edit/{id}(id=${user.id})}" class="btn btn-edit">編集</a>
-                    
-                    <form th:action="@{/user/delete/{id}(id=${user.id})}" method="post" style="display:inline;">
-                        <button type="submit" class="btn btn-del" onclick="return confirm('本当に削除しますか？');">削除</button>
-                    </form>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+
 </body>
 </html>

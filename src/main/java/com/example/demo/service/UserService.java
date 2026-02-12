@@ -46,6 +46,12 @@ public class UserService {
     public void deleteUser(Integer id) {
         userRepository.deleteById(id);
     }
+    
+ // ★追加: 検索機能
+    @Transactional(readOnly = true)
+    public List<VirtualUser> searchUsers(String keyword) {
+        return userRepository.findByEmailContaining(keyword);
+    }
 
     // --- ここまで追加 ---
 

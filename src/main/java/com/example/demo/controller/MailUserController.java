@@ -1,5 +1,10 @@
 package com.example.demo.controller;
 
+import java.util.List;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +19,7 @@ import com.example.demo.entity.VirtualDomain;
 import com.example.demo.entity.VirtualUser;
 import com.example.demo.form.UserForm;
 import com.example.demo.service.InputCsvService;
+import com.example.demo.service.OutputCsvService;
 import com.example.demo.service.UserService; // UserRegistServiceから変更
 
 import lombok.RequiredArgsConstructor;
@@ -24,6 +30,7 @@ public class MailUserController {
     
     private final UserService userService; // ★統合されたService
     private final InputCsvService csvService;
+    private final OutputCsvService outputCsvService;
     
     // 1. トップメニュー
     @GetMapping("/")
@@ -33,9 +40,20 @@ public class MailUserController {
 
     // 2. ユーザ一覧画面
     @GetMapping("/user/list")
-    public String list(Model model) {
-        // RepositoryではなくServiceを使う
-        model.addAttribute("users", userService.findAllUsers());
+    public String list(@RequestParam(required = false) String keyword, Model model) {
+    	List<VirtualUser> users;
+
+        if (keyword != null && !keyword.isEmpty()) {
+            // キーワードがある場合：検索実行
+            users = userService.searchUsers(keyword);
+        } else {
+            // キーワードがない場合：全件取得
+            users = userService.findAllUsers();
+        }
+
+        model.addAttribute("users", users);
+        model.addAttribute("keyword", keyword); // 画面の検索窓に文字を残すために渡す
+        
         return "user_list";
     }
 
@@ -153,6 +171,27 @@ public class MailUserController {
 
         return "redirect:/user/list";
     }
+    
+ // ★追加: 確認画面から「戻る」ボタンが押されたときの処理
+    @PostMapping("/user/add/back")
+    public String backToForm(@ModelAttribute UserForm form, Model model) {
+        // ドロップダウンリストの再取得が必要
+        model.addAttribute("domains", userService.findAllDomains());
+        
+        return "user_add";
+    }
+    
+    @GetMapping("/user/export")
+    public ResponseEntity<byte[]> exportCsv() {
+        byte[] csvData = outputCsvService.generateUserListCsv();
+        
+        String fileName = "user_list.csv";
+        
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csvData);
+    }  
     
     @GetMapping("/login")
     public String login() {
