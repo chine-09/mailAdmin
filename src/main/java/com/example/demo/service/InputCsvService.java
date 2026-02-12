@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 public class InputCsvService {
 
     private final VirtualDomainRepository domainRepository;
-    private final UserRegistService registService;
+    private final UserService registService;
     
     // 結果をまとめて返すためのクラス
     @Data
