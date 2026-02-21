@@ -172,6 +172,17 @@ public class MailUserController {
         return "redirect:/user/list";
     }
     
+    
+ // ★追加: 全ユーザ一括削除処理
+    @PostMapping("/user/delete/all")
+    public String deleteAll(RedirectAttributes redirectAttributes) {
+        userService.deleteAllUsers();
+        
+        // 成功メッセージを画面に渡す
+        redirectAttributes.addFlashAttribute("msg", "すべてのユーザを削除しました。");
+        return "redirect:/user/list";
+    }
+    
  // ★追加: 確認画面から「戻る」ボタンが押されたときの処理
     @PostMapping("/user/add/back")
     public String backToForm(@ModelAttribute UserForm form, Model model) {
