@@ -47,6 +47,11 @@ public class UserService {
         userRepository.deleteById(id);
     }
     
+ // ★追加: 全ユーザを一括削除する
+    public void deleteAllUsers() {
+        userRepository.deleteAll();
+    }
+    
  // ★追加: 検索機能
     @Transactional(readOnly = true)
     public List<VirtualUser> searchUsers(String keyword) {
