@@ -46,6 +46,11 @@ public class InputCsvService {
                 if (line.length < 2) continue;
 
                 String fullEmail = line[0].trim();
+                
+                if (fullEmail.startsWith("\uFEFF")) {
+                    fullEmail = fullEmail.substring(1);
+                }
+                
                 String password = line[1].trim();
 
                 int atIndex = fullEmail.lastIndexOf('@');
