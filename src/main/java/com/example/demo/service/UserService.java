@@ -47,22 +47,18 @@ public class UserService {
         userRepository.deleteById(id);
     }
     
- // ★追加: 全ユーザを一括削除する
+ // 全ユーザを一括削除する
     public void deleteAllUsers() {
         userRepository.deleteAll();
     }
     
- // ★追加: 検索機能
+ //  検索機能
     @Transactional(readOnly = true)
     public List<VirtualUser> searchUsers(String keyword) {
         return userRepository.findByEmailContaining(keyword);
     }
 
-    // --- ここまで追加 ---
-
-
-    // --- 以下、既存のロジック (そのまま) ---
-
+    // --- ここまで追加 -
     public void saveUserFromForm(UserForm form, VirtualUser user) {
         VirtualDomain domain = domainRepository.findById(form.getDomainId()).orElseThrow();
         registerUser(user, domain, form.getUsername(), form.getPassword());
@@ -80,7 +76,7 @@ public class UserService {
             throw new IllegalArgumentException("ユーザ名に使用できない文字が含まれています (半角英数字 . _ - のみ使用可)");
         }
         
-     // 3. 【追加】先頭と末尾の記号チェック (英数字で始まり、英数字で終わるべき)
+     // 3. 先頭と末尾の記号チェック (英数字で始まり、英数字で終わるべき)
         // matchesの ^[a-zA-Z0-9] は「先頭は英数字」
         // .* は「途中はなんでも」
         // [a-zA-Z0-9]$ は「末尾は英数字」

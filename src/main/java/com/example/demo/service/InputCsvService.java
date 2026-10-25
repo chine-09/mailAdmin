@@ -47,6 +47,7 @@ public class InputCsvService {
 
                 String fullEmail = line[0].trim();
                 
+             // ★追加: 先頭にBOM（見えない文字）があれば除去する
                 if (fullEmail.startsWith("\uFEFF")) {
                     fullEmail = fullEmail.substring(1);
                 }
